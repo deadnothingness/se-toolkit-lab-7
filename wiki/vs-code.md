@@ -60,6 +60,7 @@
     - [(`Windows` only) Reopen the directory in `WSL`](#windows-only-reopen-the-directory-in-wsl)
   - [Open the file](#open-the-file)
     - [Open the file using `code`](#open-the-file-using-code)
+    - [Open the file using a context menu](#open-the-file-using-a-context-menu)
   - [Open the `Markdown` preview](#open-the-markdown-preview)
 - [Language server](#language-server)
   - [Type on hover](#type-on-hover)
@@ -635,6 +636,7 @@ Here are some [workspace settings](#workspace-settings) that you can change:
 - Method 1: [Open the local file using `Explorer`](#open-the-local-file-using-the-explorer)
 - Method 2: [Open the file using `Quick Open`](#open-the-file-using-quick-open)
 - Method 3: [Open the file using `code`](#open-the-file-using-code)
+- Method 4: [Open the file using a context menu](#open-the-file-using-a-context-menu)
 
 #### Open the file using `code`
 
@@ -650,6 +652,12 @@ Here are some [workspace settings](#workspace-settings) that you can change:
    See [`<file-path>`](./file-system.md#file-path).
 
 3. (`macOS` only) If the `code <file-path>` shows an error that the `code` command doesn't exist, [add `VS Code` to `PATH`](#macos-only-add-vs-code-to-path).
+
+#### Open the file using a context menu
+
+1. Right-click a file.
+2. Find `Open with...` or similar.
+3. Choose `VS Code`.
 
 ### Open the `Markdown` preview
 
