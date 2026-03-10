@@ -36,7 +36,7 @@ If the body covers 2+ points, use a bullet list.
 Every commit must include a scope. Use the scope that best matches the
 area of change:
 
-`wiki` | `instructors` | `docs` | `readme` | `caddy` | `lab` |
+`wiki` | `instructors` | `docs` | `contributing` | `readme` | `caddy` | `lab` |
 `frontend` | `backend` | `tests` | `vscode` | `git` | `github` |
 `agent` | `nix` | `docker` | `database` | `markdownlint`
 
@@ -44,19 +44,20 @@ area of change:
 
 - `wiki` — `wiki/` pages
 - `instructors` — `instructors/` (internal design notes)
-- `docs` — `docs/` (architecture, contributing, etc.)
+- `docs` — `docs/` (architecture docs)
+- `contributing` — `contributing/` (conventions, configuration)
 - `readme` — Root `README.md`
 - `caddy` — `caddy/` config and reverse-proxy setup
 - `lab` — `lab/` (task sheets, setup guide)
 - `frontend` — `frontend/`
 - `backend` — `backend/`, `pyproject.toml`, backend config
-- `tests` — `tests/` (test files and fixtures)
+- `tests` — `backend/tests/` (test files and fixtures)
 - `vscode` — `.vscode/` settings and extensions
 - `git` — `.gitignore`, `.gitmodules`, git config
 - `github` — `.github/` (workflows, issue templates, PR templates)
-- `agent` — `.agents/` (skills, settings)
+- `agent` — `.agents/`, `AGENTS.md` (skills, settings)
 - `nix` — `flake.nix`, `flake.lock`, Nix-related config
-- `docker` — `Dockerfile`, `compose.yaml`, Docker-related config
+- `docker` — `Dockerfile`, `docker-compose.yml`, Docker-related config
 - `database` — `.sql` files, migrations, schema
 - `markdownlint` — `.markdownlint*` config
 
