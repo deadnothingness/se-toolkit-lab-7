@@ -17,6 +17,8 @@ This separation means handlers can be tested without Telegram, making developmen
 
 ## Task 1: Scaffold
 
+**Status:** ✅ Completed
+
 **Goal:** Create project structure with testable handlers and `--test` mode.
 
 - Create `bot/` directory with handlers, services, config
@@ -28,13 +30,18 @@ This separation means handlers can be tested without Telegram, making developmen
 
 ## Task 2: Backend Integration
 
+**Status:** ✅ Completed
+
 **Goal:** Connect handlers to the LMS backend API.
 
-- Create API client service with Bearer token authentication
-- Implement `/health` — call backend health endpoint
-- Implement `/labs` — fetch and display available labs
-- Implement `/scores <lab>` — fetch scores for a specific lab
-- Add error handling for backend failures (friendly messages, not crashes)
+**Implementation:**
+
+- Created `services/api_client.py` with `LMSClient` class
+- Uses `httpx` for HTTP requests with Bearer token authentication
+- Implemented `/health` — calls `GET /items/` to verify backend health
+- Implemented `/labs` — fetches and displays labs from backend
+- Implemented `/scores <lab>` — fetches pass rates from `GET /analytics/pass-rates?lab=`
+- Error handling shows actual error (e.g., "Connection refused") without raw tracebacks
 
 **Acceptance:** Commands return real data from the backend. Backend down produces a friendly error message.
 
