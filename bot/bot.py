@@ -17,7 +17,7 @@ from pathlib import Path
 bot_dir = Path(__file__).parent
 sys.path.insert(0, str(bot_dir))
 
-from handlers import (
+from handlers.commands import (
     handle_start,
     handle_help,
     handle_health,
@@ -44,26 +44,39 @@ def parse_command(text: str) -> tuple[str, str | None]:
 
 def run_test_mode(command_text: str) -> None:
     """Run a command in test mode and print the result.
-    
+
     Args:
         command_text: The command to test, e.g., "/start" or "/scores lab-04"
     """
     command, arg = parse_command(command_text)
-    
+
+    # Load config for handlers that need backend access
+    config = load_config()
+
     # Route to the appropriate handler
     if command == "/start":
         response = handle_start()
     elif command == "/help":
         response = handle_help()
     elif command == "/health":
-        response = handle_health()
+        response = handle_health(
+            lms_api_url=config["LMS_API_URL"],
+            lms_api_key=config["LMS_API_KEY"],
+        )
     elif command == "/labs":
-        response = handle_labs()
+        response = handle_labs(
+            lms_api_url=config["LMS_API_URL"],
+            lms_api_key=config["LMS_API_KEY"],
+        )
     elif command == "/scores":
-        response = handle_scores(arg)
+        response = handle_scores(
+            lab_name=arg,
+            lms_api_url=config["LMS_API_URL"],
+            lms_api_key=config["LMS_API_KEY"],
+        )
     else:
         response = f"❓ Unknown command: {command}\n\nUse /help to see available commands."
-    
+
     # Print response to stdout
     print(response)
 
