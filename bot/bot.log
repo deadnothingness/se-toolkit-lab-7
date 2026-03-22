@@ -1,0 +1,7 @@
+nohup: ignoring input
+Starting Telegram bot...
+Bot token configured: Yes
+LMS API URL: http://localhost:42002
+
+TODO: Task 2 — implement Telegram bot using aiogram
+For now, the bot is running but not processing messages.

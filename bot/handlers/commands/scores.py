@@ -26,19 +26,17 @@ def handle_scores(lab_name: str | None, lms_api_url: str, lms_api_key: str) -> s
                 return f"📊 No scores found for '{lab_name}'. Check the lab identifier."
 
             # Format pass rates
-            lines = [f"Pass rates for {lab_name}:"]
+            lines = [f"📊 Pass rates for {lab_name}:"]
             for rate in pass_rates:
                 task_name = rate.get("task", rate.get("task_name", "Unknown"))
-                pass_rate = rate.get("pass_rate", rate.get("average", 0))
+                # API returns avg_score as percentage (0-100), not pass_rate as fraction
+                pass_rate = rate.get("pass_rate", rate.get("avg_score", rate.get("average", 0)))
                 attempts = rate.get("attempts", rate.get("count", 0))
 
-                # Format percentage
-                if isinstance(pass_rate, float):
-                    percentage = f"{pass_rate * 100:.1f}%"
-                else:
-                    percentage = f"{pass_rate}%"
+                # Format percentage (API already returns 0-100 scale)
+                percentage = f"{pass_rate:.1f}%"
 
-                lines.append(f"• {task_name}: {percentage} ({attempts} attempts)")
+                lines.append(f"- {task_name}: {percentage} ({attempts} attempts)")
 
             return "\n".join(lines)
 
