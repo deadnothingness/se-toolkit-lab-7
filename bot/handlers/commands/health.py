@@ -17,7 +17,8 @@ def handle_health(lms_api_url: str, lms_api_key: str) -> str:
     try:
         with create_client(lms_api_url, lms_api_key) as client:
             result = client.health_check()
-            return f"✅ Backend is healthy. {result['item_count']} items available."
+            item_count = result['item_count']
+            return f"✅ Health OK - Backend is running. Items: {item_count}"
     except httpx.ConnectError as e:
         # Connection refused, DNS failure, etc.
         error_detail = str(e.args[0]) if e.args else "connection error"
