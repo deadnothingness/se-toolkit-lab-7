@@ -24,15 +24,16 @@ from handlers.commands import (
     handle_labs,
     handle_scores,
 )
+from handlers.query import handle_query, get_capabilities_hint
 from config import load_config
 
 
 def parse_command(text: str) -> tuple[str, str | None]:
     """Parse a command string into command and argument.
-    
+
     Args:
         text: The command text, e.g., "/start" or "/scores lab-04"
-    
+
     Returns:
         Tuple of (command, argument) where argument may be None.
     """
@@ -42,20 +43,83 @@ def parse_command(text: str) -> tuple[str, str | None]:
     return command, argument
 
 
+def is_natural_language_query(text: str) -> bool:
+    """Check if input is a natural language query (not a slash command).
+
+    Args:
+        text: The input text.
+
+    Returns:
+        True if it's a natural language query, False if it's a command.
+    """
+    text = text.strip()
+    return not text.startswith("/")
+
+
+def get_inline_keyboard_markup() -> list[list[dict]]:
+    """Get inline keyboard buttons for common queries.
+
+    Returns:
+        List of button rows for Telegram inline keyboard.
+    """
+    return [
+        [
+            {"text": "📊 Health", "callback_data": "health"},
+            {"text": "📚 Labs", "callback_data": "labs"},
+        ],
+        [
+            {"text": "🏆 Top Students", "callback_data": "top_5"},
+            {"text": "📈 Pass Rates", "callback_data": "pass_rates"},
+        ],
+        [
+            {"text": "❓ Lowest Pass Rate", "callback_data": "lowest_pass"},
+            {"text": "👥 Groups", "callback_data": "groups"},
+        ],
+    ]
+
+
+def format_keyboard_hint() -> str:
+    """Format a hint about inline keyboard buttons.
+
+    Returns:
+        String describing available quick actions.
+    """
+    return (
+        "\n\n💡 Quick actions (when using Telegram):\n"
+        "Tap the buttons below to quickly check health, labs, top students, and more!"
+    )
+
+
 def run_test_mode(command_text: str) -> None:
     """Run a command in test mode and print the result.
 
     Args:
         command_text: The command to test, e.g., "/start" or "/scores lab-04"
+                      or a natural language query like "which lab has the lowest pass rate"
     """
-    command, arg = parse_command(command_text)
-
     # Load config for handlers that need backend access
     config = load_config()
 
+    # Check if it's a natural language query
+    if is_natural_language_query(command_text):
+        response = handle_query(
+            message=command_text,
+            lms_api_url=config["LMS_API_URL"],
+            lms_api_key=config["LMS_API_KEY"],
+            llm_api_base_url=config["LLM_API_BASE_URL"],
+            llm_api_key=config["LLM_API_KEY"],
+            llm_api_model=config["LLM_API_MODEL"],
+            debug=True,
+        )
+        print(response)
+        return
+
+    # It's a slash command - route to appropriate handler
+    command, arg = parse_command(command_text)
+
     # Route to the appropriate handler
     if command == "/start":
-        response = handle_start()
+        response = handle_start() + format_keyboard_hint()
     elif command == "/help":
         response = handle_help()
     elif command == "/health":
@@ -83,23 +147,32 @@ def run_test_mode(command_text: str) -> None:
 
 def run_telegram_bot() -> None:
     """Run the Telegram bot.
-    
+
     TODO: Task 2 — implement Telegram bot using aiogram.
     For now, this is a placeholder.
     """
     config = load_config()
-    
+
     if not config["BOT_TOKEN"]:
         print("Error: BOT_TOKEN not found in .env.bot.secret")
         print("Please copy .env.bot.example to .env.bot.secret and fill in your bot token.")
         sys.exit(1)
-    
+
     print("Starting Telegram bot...")
     print(f"Bot token configured: {'Yes' if config['BOT_TOKEN'] else 'No'}")
     print(f"LMS API URL: {config['LMS_API_URL']}")
+    print(f"LLM API Base: {config['LLM_API_BASE_URL']}")
     print()
     print("TODO: Task 2 — implement Telegram bot using aiogram")
+    print("TODO: Task 3 — implement natural language query handling")
+    print("TODO: Task 4 — add inline keyboard buttons")
+    print()
     print("For now, the bot is running but not processing messages.")
+    print()
+    print("Inline keyboard layout (for reference):")
+    keyboard = get_inline_keyboard_markup()
+    for row in keyboard:
+        print("  " + " | ".join(btn["text"] for btn in row))
 
 
 def main() -> None:
@@ -111,17 +184,18 @@ def main() -> None:
 Examples:
     uv run bot.py --test "/start"      # Test /start command
     uv run bot.py --test "/help"       # Test /help command
+    uv run bot.py --test "what labs are available"  # Natural language query
     uv run bot.py                      # Run the Telegram bot
         """,
     )
     parser.add_argument(
         "--test",
-        metavar="COMMAND",
-        help="Run a command in test mode (no Telegram connection)",
+        metavar="QUERY",
+        help="Run a command or query in test mode (no Telegram connection)",
     )
-    
+
     args = parser.parse_args()
-    
+
     if args.test:
         # Test mode: call handlers directly
         run_test_mode(args.test)
