@@ -47,14 +47,42 @@ This separation means handlers can be tested without Telegram, making developmen
 
 ## Task 3: Intent-Based Natural Language Routing
 
+**Status:** ✅ Completed
+
 **Goal:** Allow users to ask questions in plain language.
 
-- Create LLM client service
-- Define tool descriptions for all backend endpoints
-- Implement intent router that uses LLM to decide which tool to call
-- Handle multi-step reasoning (e.g., "How am I doing?" → fetch labs → fetch scores)
+**Implementation:**
+
+- Created `services/llm_client.py` with `LLMClient` class for OpenAI-compatible tool calling
+- Defined 9 tool schemas in `get_tool_definitions()`:
+  - `get_items` — List all labs and tasks
+  - `get_learners` — List enrolled students and groups
+  - `get_scores` — Score distribution for a lab
+  - `get_pass_rates` — Per-task pass rates for a lab
+  - `get_timeline` — Submissions per day for a lab
+  - `get_groups` — Per-group scores and student counts
+  - `get_top_learners` — Top N learners by score
+  - `get_completion_rate` — Completion rate percentage
+  - `trigger_sync` — Refresh data from autochecker
+- Created `handlers/intent_router.py` with:
+  - `route()` function implementing the tool-calling loop
+  - System prompt guiding LLM to use tools appropriately
+  - Multi-turn conversation support (feeds tool results back to LLM)
+  - Pre-check for greetings and gibberish (`is_greeting_or_gibberish()`)
+- Created `handlers/query.py` with `handle_query()` for natural language queries
+- Updated `bot.py`:
+  - Detects natural language queries (non-slash-command input)
+  - Routes to LLM for intent-based tool calling
+  - Added inline keyboard button definitions for Telegram UI
+  - Debug logging to stderr for tool call tracing
 
 **Acceptance:** Plain text like "what labs are available" triggers the same logic as `/labs`.
+
+**Testing:**
+- Greetings ("hello", "hi") return friendly responses without LLM calls
+- Gibberish ("asdfgh") returns helpful guidance
+- Natural language queries route through LLM with tool definitions
+- Debug output shows `[tool]` lines for each tool call and `[summary]` for final response
 
 ## Task 4: Containerize and Deploy
 

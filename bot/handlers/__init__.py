@@ -12,6 +12,7 @@ from .commands import (
     handle_labs,
     handle_scores,
 )
+from .query import handle_query, get_capabilities_hint
 
 __all__ = [
     "handle_start",
@@ -19,4 +20,6 @@ __all__ = [
     "handle_health",
     "handle_labs",
     "handle_scores",
+    "handle_query",
+    "get_capabilities_hint",
 ]

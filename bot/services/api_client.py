@@ -41,6 +41,35 @@ class LMSClient:
         response.raise_for_status()
         return response.json()
 
+    def get_learners(self) -> list[dict]:
+        """Fetch all enrolled learners and their groups.
+
+        Returns:
+            List of learner records.
+
+        Raises:
+            httpx.HTTPError: If the request fails.
+        """
+        response = self._client.get("/learners/")
+        response.raise_for_status()
+        return response.json()
+
+    def get_scores(self, lab: str) -> list[dict]:
+        """Fetch score distribution for a lab (4 buckets).
+
+        Args:
+            lab: Lab identifier (e.g., "lab-04").
+
+        Returns:
+            List of score distribution data.
+
+        Raises:
+            httpx.HTTPError: If the request fails.
+        """
+        response = self._client.get("/analytics/scores", params={"lab": lab})
+        response.raise_for_status()
+        return response.json()
+
     def get_pass_rates(self, lab: str) -> list[dict]:
         """Fetch pass rates for a specific lab.
 
@@ -54,6 +83,86 @@ class LMSClient:
             httpx.HTTPError: If the request fails.
         """
         response = self._client.get("/analytics/pass-rates", params={"lab": lab})
+        response.raise_for_status()
+        return response.json()
+
+    def get_timeline(self, lab: str) -> list[dict]:
+        """Fetch submission timeline for a lab (submissions per day).
+
+        Args:
+            lab: Lab identifier (e.g., "lab-04").
+
+        Returns:
+            List of timeline data points.
+
+        Raises:
+            httpx.HTTPError: If the request fails.
+        """
+        response = self._client.get("/analytics/timeline", params={"lab": lab})
+        response.raise_for_status()
+        return response.json()
+
+    def get_groups(self, lab: str) -> list[dict]:
+        """Fetch per-group scores and student counts for a lab.
+
+        Args:
+            lab: Lab identifier (e.g., "lab-04").
+
+        Returns:
+            List of group performance data.
+
+        Raises:
+            httpx.HTTPError: If the request fails.
+        """
+        response = self._client.get("/analytics/groups", params={"lab": lab})
+        response.raise_for_status()
+        return response.json()
+
+    def get_top_learners(self, lab: str, limit: int = 10) -> list[dict]:
+        """Fetch top N learners by score for a lab.
+
+        Args:
+            lab: Lab identifier (e.g., "lab-04").
+            limit: Maximum number of learners to return (default 10).
+
+        Returns:
+            List of top learner records.
+
+        Raises:
+            httpx.HTTPError: If the request fails.
+        """
+        response = self._client.get(
+            "/analytics/top-learners", params={"lab": lab, "limit": limit}
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_completion_rate(self, lab: str) -> dict:
+        """Fetch completion rate percentage for a lab.
+
+        Args:
+            lab: Lab identifier (e.g., "lab-04").
+
+        Returns:
+            Dict with completion rate data.
+
+        Raises:
+            httpx.HTTPError: If the request fails.
+        """
+        response = self._client.get("/analytics/completion-rate", params={"lab": lab})
+        response.raise_for_status()
+        return response.json()
+
+    def trigger_sync(self) -> dict:
+        """Trigger a data sync from autochecker.
+
+        Returns:
+            Dict with sync status.
+
+        Raises:
+            httpx.HTTPError: If the request fails.
+        """
+        response = self._client.post("/pipeline/sync")
         response.raise_for_status()
         return response.json()
 
