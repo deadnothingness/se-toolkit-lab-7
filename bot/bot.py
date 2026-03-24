@@ -2,7 +2,7 @@
 
 Supports two modes:
 1. --test mode: Call handlers directly for offline testing
-2. Normal mode: Run the Telegram bot
+2. Normal mode: Run the Telegram bot using python-telegram-bot
 
 Usage:
     uv run bot.py --test "/start"    # Test mode
@@ -17,6 +17,16 @@ from pathlib import Path
 bot_dir = Path(__file__).parent
 sys.path.insert(0, str(bot_dir))
 
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+    filters,
+)
+
 from handlers.commands import (
     handle_start,
     handle_help,
@@ -24,19 +34,12 @@ from handlers.commands import (
     handle_labs,
     handle_scores,
 )
-from handlers.query import handle_query, get_capabilities_hint
+from handlers.query import handle_query
 from config import load_config
 
 
 def parse_command(text: str) -> tuple[str, str | None]:
-    """Parse a command string into command and argument.
-
-    Args:
-        text: The command text, e.g., "/start" or "/scores lab-04"
-
-    Returns:
-        Tuple of (command, argument) where argument may be None.
-    """
+    """Parse a command string into command and argument."""
     parts = text.strip().split(maxsplit=1)
     command = parts[0].lower()
     argument = parts[1] if len(parts) > 1 else None
@@ -44,63 +47,170 @@ def parse_command(text: str) -> tuple[str, str | None]:
 
 
 def is_natural_language_query(text: str) -> bool:
-    """Check if input is a natural language query (not a slash command).
-
-    Args:
-        text: The input text.
-
-    Returns:
-        True if it's a natural language query, False if it's a command.
-    """
+    """Check if input is a natural language query (not a slash command)."""
     text = text.strip()
     return not text.startswith("/")
 
 
-def get_inline_keyboard_markup() -> list[list[dict]]:
-    """Get inline keyboard buttons for common queries.
-
-    Returns:
-        List of button rows for Telegram inline keyboard.
-    """
-    return [
+def get_inline_keyboard() -> InlineKeyboardMarkup:
+    """Get inline keyboard buttons for common queries."""
+    keyboard = [
         [
-            {"text": "📊 Health", "callback_data": "health"},
-            {"text": "📚 Labs", "callback_data": "labs"},
+            InlineKeyboardButton("📊 Health", callback_data="health"),
+            InlineKeyboardButton("📚 Labs", callback_data="labs"),
         ],
         [
-            {"text": "🏆 Top Students", "callback_data": "top_5"},
-            {"text": "📈 Pass Rates", "callback_data": "pass_rates"},
+            InlineKeyboardButton("🏆 Top Students", callback_data="top_5"),
+            InlineKeyboardButton("📈 Pass Rates", callback_data="pass_rates"),
         ],
         [
-            {"text": "❓ Lowest Pass Rate", "callback_data": "lowest_pass"},
-            {"text": "👥 Groups", "callback_data": "groups"},
+            InlineKeyboardButton("❓ Lowest Pass Rate", callback_data="lowest_pass"),
+            InlineKeyboardButton("👥 Groups", callback_data="groups"),
         ],
     ]
+    return InlineKeyboardMarkup(keyboard)
 
 
 def format_keyboard_hint() -> str:
-    """Format a hint about inline keyboard buttons.
-
-    Returns:
-        String describing available quick actions.
-    """
+    """Format a hint about inline keyboard buttons."""
     return (
-        "\n\n💡 Quick actions (when using Telegram):\n"
+        "\n\n💡 Quick actions:\n"
         "Tap the buttons below to quickly check health, labs, top students, and more!"
     )
 
 
-def run_test_mode(command_text: str) -> None:
-    """Run a command in test mode and print the result.
+async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /start command."""
+    response = handle_start() + format_keyboard_hint()
+    await update.message.reply_text(response, reply_markup=get_inline_keyboard())
 
-    Args:
-        command_text: The command to test, e.g., "/start" or "/scores lab-04"
-                      or a natural language query like "which lab has the lowest pass rate"
-    """
-    # Load config for handlers that need backend access
+
+async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /help command."""
+    response = handle_help()
+    await update.message.reply_text(response)
+
+
+async def cmd_health(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /health command."""
+    config = load_config()
+    response = handle_health(
+        lms_api_url=config["LMS_API_URL"],
+        lms_api_key=config["LMS_API_KEY"],
+    )
+    await update.message.reply_text(response)
+
+
+async def cmd_labs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /labs command."""
+    config = load_config()
+    response = handle_labs(
+        lms_api_url=config["LMS_API_URL"],
+        lms_api_key=config["LMS_API_KEY"],
+    )
+    await update.message.reply_text(response)
+
+
+async def cmd_scores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /scores command."""
+    config = load_config()
+    arg = context.args[0] if context.args else None
+    response = handle_scores(
+        lab_name=arg,
+        lms_api_url=config["LMS_API_URL"],
+        lms_api_key=config["LMS_API_KEY"],
+    )
+    await update.message.reply_text(response)
+
+
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle inline keyboard button presses."""
+    query = update.callback_query
+    await query.answer()
+    
+    config = load_config()
+    callback_data = query.data
+    
+    if callback_data == "health":
+        response = handle_health(
+            lms_api_url=config["LMS_API_URL"],
+            lms_api_key=config["LMS_API_KEY"],
+        )
+    elif callback_data == "labs":
+        response = handle_labs(
+            lms_api_url=config["LMS_API_URL"],
+            lms_api_key=config["LMS_API_KEY"],
+        )
+    elif callback_data == "top_5":
+        response = handle_query(
+            message="show top 5 students",
+            lms_api_url=config["LMS_API_URL"],
+            lms_api_key=config["LMS_API_KEY"],
+            llm_api_base_url=config["LLM_API_BASE_URL"],
+            llm_api_key=config["LLM_API_KEY"],
+            llm_api_model=config["LLM_API_MODEL"],
+            debug=False,
+        )
+    elif callback_data == "pass_rates":
+        response = handle_query(
+            message="show pass rates for all labs",
+            lms_api_url=config["LMS_API_URL"],
+            lms_api_key=config["LMS_API_KEY"],
+            llm_api_base_url=config["LLM_API_BASE_URL"],
+            llm_api_key=config["LLM_API_KEY"],
+            llm_api_model=config["LLM_API_MODEL"],
+            debug=False,
+        )
+    elif callback_data == "lowest_pass":
+        response = handle_query(
+            message="which lab has the lowest pass rate",
+            lms_api_url=config["LMS_API_URL"],
+            lms_api_key=config["LMS_API_KEY"],
+            llm_api_base_url=config["LLM_API_BASE_URL"],
+            llm_api_key=config["LLM_API_KEY"],
+            llm_api_model=config["LLM_API_MODEL"],
+            debug=False,
+        )
+    elif callback_data == "groups":
+        response = handle_query(
+            message="show group performance",
+            lms_api_url=config["LMS_API_URL"],
+            lms_api_key=config["LMS_API_KEY"],
+            llm_api_base_url=config["LLM_API_BASE_URL"],
+            llm_api_key=config["LLM_API_KEY"],
+            llm_api_model=config["LLM_API_MODEL"],
+            debug=False,
+        )
+    else:
+        response = "Unknown action."
+    
+    await query.edit_message_text(response)
+
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle natural language messages."""
+    text = update.message.text
+    if not text:
+        return
+    
+    config = load_config()
+    
+    response = handle_query(
+        message=text,
+        lms_api_url=config["LMS_API_URL"],
+        lms_api_key=config["LMS_API_KEY"],
+        llm_api_base_url=config["LLM_API_BASE_URL"],
+        llm_api_key=config["LLM_API_KEY"],
+        llm_api_model=config["LLM_API_MODEL"],
+        debug=False,
+    )
+    await update.message.reply_text(response)
+
+
+def run_test_mode(command_text: str) -> None:
+    """Run a command in test mode and print the result."""
     config = load_config()
 
-    # Check if it's a natural language query
     if is_natural_language_query(command_text):
         response = handle_query(
             message=command_text,
@@ -114,10 +224,8 @@ def run_test_mode(command_text: str) -> None:
         print(response)
         return
 
-    # It's a slash command - route to appropriate handler
     command, arg = parse_command(command_text)
 
-    # Route to the appropriate handler
     if command == "/start":
         response = handle_start() + format_keyboard_hint()
     elif command == "/help":
@@ -141,16 +249,11 @@ def run_test_mode(command_text: str) -> None:
     else:
         response = f"❓ Unknown command: {command}\n\nUse /help to see available commands."
 
-    # Print response to stdout
     print(response)
 
 
 def run_telegram_bot() -> None:
-    """Run the Telegram bot.
-
-    TODO: Task 2 — implement Telegram bot using aiogram.
-    For now, this is a placeholder.
-    """
+    """Run the Telegram bot using python-telegram-bot with polling."""
     config = load_config()
 
     if not config["BOT_TOKEN"]:
@@ -163,16 +266,26 @@ def run_telegram_bot() -> None:
     print(f"LMS API URL: {config['LMS_API_URL']}")
     print(f"LLM API Base: {config['LLM_API_BASE_URL']}")
     print()
-    print("TODO: Task 2 — implement Telegram bot using aiogram")
-    print("TODO: Task 3 — implement natural language query handling")
-    print("TODO: Task 4 — add inline keyboard buttons")
-    print()
-    print("For now, the bot is running but not processing messages.")
-    print()
-    print("Inline keyboard layout (for reference):")
-    keyboard = get_inline_keyboard_markup()
-    for row in keyboard:
-        print("  " + " | ".join(btn["text"] for btn in row))
+    print("Bot is running. Press Ctrl+C to stop.")
+
+    # Build the application
+    app = Application.builder().token(config["BOT_TOKEN"]).build()
+
+    # Add command handlers
+    app.add_handler(CommandHandler("start", cmd_start))
+    app.add_handler(CommandHandler("help", cmd_help))
+    app.add_handler(CommandHandler("health", cmd_health))
+    app.add_handler(CommandHandler("labs", cmd_labs))
+    app.add_handler(CommandHandler("scores", cmd_scores))
+
+    # Add callback query handler for inline keyboard
+    app.add_handler(CallbackQueryHandler(handle_callback))
+
+    # Add message handler for natural language queries (non-command messages)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    # Start polling - this runs forever until interrupted
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 def main() -> None:
@@ -197,10 +310,8 @@ Examples:
     args = parser.parse_args()
 
     if args.test:
-        # Test mode: call handlers directly
         run_test_mode(args.test)
     else:
-        # Normal mode: run Telegram bot
         run_telegram_bot()
 
 

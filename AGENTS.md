@@ -25,7 +25,7 @@ You are building a Telegram bot.
 
 ## How to build a task (example: Task 1)
 
-**Step 1:** Explain testable handler architecture CONVERSATIONALLY to the student. Don't just write it in a file — explain it directly: "A handler is a function that takes input and returns text. It doesn't depend on Telegram. You can call it from --test mode, from tests, or from Telegram — same function.".
+**Step 1:** Explain testable handler architecture CONVERSATIONALLY to the student. Don't just write it in a file — explain it directly: "A handler is a function that takes input and returns text. It doesn't depend on Telegram. You can call it from --test mode, from tests, or from Telegram — same function."
 
 **Step 2:** Create `bot.py` with --test mode and ONE placeholder handler (e.g., /start returns "Welcome"). Nothing else.
 
