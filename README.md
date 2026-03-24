@@ -91,3 +91,70 @@ By the end of this lab, you should be able to say:
 2. [Backend Integration](./lab/tasks/required/task-2.md) — P0: slash commands + real data
 3. [Intent-Based Natural Language Routing](./lab/tasks/required/task-3.md) — P1: LLM tool use
 4. [Containerize and Document](./lab/tasks/required/task-4.md) — P3: containerize + deploy
+
+## Deploy
+
+### Prerequisites
+
+Ensure you have the following files configured:
+
+- **`.env.docker.secret`** — Docker compose environment variables (backend, postgres, caddy, bot)
+- **`.env.bot.secret`** — Bot-specific secrets (Telegram token, LLM credentials)
+
+The bot requires these environment variables in `.env.docker.secret`:
+
+```bash
+# Telegram bot token (from @BotFather)
+BOT_TOKEN=your-telegram-bot-token
+
+# LMS API — use Docker service name, not localhost
+LMS_API_URL=http://backend:8000
+LMS_API_KEY=my-secret-api-key
+
+# LLM API — use host.docker.internal (Qwen proxy is on different network)
+LLM_API_KEY=your-qwen-api-key
+LLM_API_BASE_URL=http://host.docker.internal:42005/v1
+LLM_API_MODEL=coder-model
+```
+
+### Deploy commands
+
+```bash
+cd ~/se-toolkit-lab-7
+
+# Stop any running bot process (from nohup development)
+pkill -f "bot.py" 2>/dev/null
+
+# Build and start all services (backend, postgres, caddy, bot)
+docker compose --env-file .env.docker.secret up --build -d
+
+# Check status
+docker compose --env-file .env.docker.secret ps
+
+# View bot logs
+docker compose --env-file .env.docker.secret logs bot --tail 50
+
+# Stop everything
+docker compose --env-file .env.docker.secret down
+```
+
+### Verify deployment
+
+```bash
+# Backend health check
+curl -sf http://localhost:42002/docs
+
+# Bot container status
+docker compose --env-file .env.docker.secret ps bot
+
+# Test in Telegram: send /start, /health, /labs, or natural language queries
+```
+
+### Troubleshooting
+
+| Symptom | Likely cause |
+|---------|--------------|
+| Bot container restarting | Missing env var or import error — check `docker compose logs bot` |
+| `/health` fails | `LMS_API_URL` must be `http://backend:8000` (not `localhost`) |
+| LLM queries fail | `LLM_API_BASE_URL` must use `host.docker.internal:42005` |
+| Build fails at `uv sync` | Ensure `uv.lock` is copied in Dockerfile |
